@@ -7,8 +7,6 @@
       - Blinking the onboard LED at P4.7, based on onboard switch inputs from P1.1
       - Blinking the onboard LED at P1.0, based on interrupts from TimerA0
 
-  This!
-
  */
 void main(void)
 {
