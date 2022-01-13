@@ -16,8 +16,8 @@ typedef enum I2C_ModeEnum{
 typedef struct I2CSM{
     I2C_Mode MasterMode;                // Current State of I2CStateMachine
     uint8_t RegAddr;                    // Slave Register Address to read-from/write-to
-    uint8_t RXBuffer[MAX_BUFFER_SIZE];  // Buffer used to receive data in the ISR
-    uint8_t TXBuffer[MAX_BUFFER_SIZE];  // Buffer used to transmit data in the ISR
+    uint8_t RXBuffer[MAX_I2CBUFFER_SIZE];  // Buffer used to receive data in the ISR
+    uint8_t TXBuffer[MAX_I2CBUFFER_SIZE];  // Buffer used to transmit data in the ISR
     uint8_t RXByteCtr;                  // Number of bytes left to receive
     uint8_t TXByteCtr;                  // Number of bytes left to transfer
     uint8_t RXIndex;                    // The index of the next byte to be received in RXBuffer
@@ -117,7 +117,8 @@ void I2C_ReadReg(uint8_t dev_addr, uint8_t reg_addr, uint8_t count)
 //--------------------------------------------------------
 //-- I2C ISR
 #pragma vector=USCI_B0_VECTOR
-__interrupt void USCI_B0_I2C_ISR(void){
+__interrupt void USCI_B0_I2C_ISR(void)
+{
     P1OUT ^= BIT0; // toggle P1.0 LED for troubleshooting
 
     uint8_t rx_val = 0;

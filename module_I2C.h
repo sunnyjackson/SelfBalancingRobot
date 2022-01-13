@@ -1,6 +1,6 @@
 
 // Maximum Buffer Size for Writing-to & Reading-from I2C
-#define MAX_BUFFER_SIZE     20
+#define MAX_I2CBUFFER_SIZE     20
 
 // Initialize I2C Port
 void I2C_Init(void);
