@@ -13,18 +13,6 @@ UARTStateMachine uart;
 
 
 //--------------------------------------------------------
-//-- Local Helper Functions
-void CopyArray(uint8_t *source, uint8_t *dest, uint8_t count)
-{
-    uint8_t copyIndex = 0;
-    for (copyIndex = 0; copyIndex < count; copyIndex++)
-    {
-        dest[copyIndex] = source[copyIndex];
-    }
-}
-
-
-//--------------------------------------------------------
 //-- UART Module Public Functions
             // TODO: Consider accepting Baudrate argument
 void UART_Init(void)
@@ -55,7 +43,11 @@ void UART_Tx(uint8_t* data, uint8_t count)
 {
     //Initialize uart state machine
         // TODO: Consider rewriting this module so that it doesn't need to use CopyArray, and instead just uses the pointer it receives to step through the buffer (although this would require no modifications to that buffer during the transmission period...)
-    CopyArray(data, uart.TXBuffer, count);
+    uint8_t copyIndex;
+    for (copyIndex = 0; copyIndex < count; copyIndex++)
+    {
+        uart.TXBuffer[copyIndex] = data[copyIndex];
+    }
     uart.TXByteCtr = count;
     uart.TXIndex = 0;
 

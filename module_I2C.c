@@ -2,42 +2,6 @@
 #include <stdint.h>
 #include "module_I2C.h"
 
-
-//--------------------------------------------------------
-//-- Declare I2C State Machine Data Structures
-typedef enum I2C_ModeEnum{
-    IDLE_MODE,
-    TX_REG_ADDRESS_MODE,
-    TX_DATA_MODE,
-    RX_DATA_MODE,
-    SWITCH_TO_RX_MODE
-} I2C_Mode;
-
-typedef struct I2CSM{
-    I2C_Mode MasterMode;                // Current State of I2CStateMachine
-    uint8_t RegAddr;                    // Slave Register Address to read-from/write-to
-    uint8_t RXBuffer[MAX_I2CBUFFER_SIZE];  // Buffer used to receive data in the ISR
-    uint8_t TXBuffer[MAX_I2CBUFFER_SIZE];  // Buffer used to transmit data in the ISR
-    uint8_t RXByteCtr;                  // Number of bytes left to receive
-    uint8_t TXByteCtr;                  // Number of bytes left to transfer
-    uint8_t RXIndex;                    // The index of the next byte to be received in RXBuffer
-    uint8_t TXIndex;                    // The index of the next byte to be transmitted in TXBuffer
-}I2CStateMachine;
-I2CStateMachine i2c;
-
-
-//--------------------------------------------------------
-//-- Local Helper Functions
-void CopyArray(uint8_t *source, uint8_t *dest, uint8_t count)
-{
-    uint8_t copyIndex = 0;
-    for (copyIndex = 0; copyIndex < count; copyIndex++)
-    {
-        dest[copyIndex] = source[copyIndex];
-    }
-}
-
-
 //--------------------------------------------------------
 //-- I2C Module Public Functions
 void I2C_Init(void)
@@ -65,14 +29,46 @@ void I2C_Init(void)
     i2c.RegAddr = 0;
 }
 
-void I2C_WriteReg(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint8_t count)
+void I2C_WriteByte(uint8_t dev_addr, uint8_t reg_addr, uint8_t reg_data)
 {
     // Initialize state machine
     i2c.MasterMode = TX_REG_ADDRESS_MODE;
     i2c.RegAddr = reg_addr;
 
     //Copy register data to TXBuffer
-    CopyArray(reg_data, i2c.TXBuffer, count);
+    i2c.TXBuffer[0] = reg_data;
+
+    i2c.TXByteCtr = 1;
+    i2c.RXByteCtr = 0;
+    i2c.RXIndex = 0;
+    i2c.TXIndex = 0;
+
+    // Initialize slave address and interrupts
+    UCB0I2CSA = dev_addr;
+    UCB0IFG &= ~(UCTXIFG + UCRXIFG);         // Clear any pending interrupts
+    UCB0IE &= ~UCRXIE;                       // Disable RX interrupt
+    UCB0IE |= UCTXIE;                        // Enable TX interrupt
+
+    UCB0CTL1 |= UCTR + UCTXSTT;              // I2C TX, start condition
+    __enable_interrupt(); // I replace this line, because I don't understand LPM on the MSP430: __bis_SR_register(LPM0_bits + GIE);              // Enter LPM0 w/ interrupts
+
+    return;
+}
+
+void I2C_WriteBuffer(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint8_t count)
+{
+    while(i2c.MasterMode != IDLE_MODE); // TODO: Consider an interrupt-based approach, instead of this crude approach
+
+    // Initialize state machine
+    i2c.MasterMode = TX_REG_ADDRESS_MODE;
+    i2c.RegAddr = reg_addr;
+
+    //Copy register data to TXBuffer
+    uint8_t copyIndex;
+    for (copyIndex = 0; copyIndex < count; copyIndex++)
+    {
+        i2c.TXBuffer[copyIndex] = reg_data[copyIndex];
+    }
 
     i2c.TXByteCtr = count;
     i2c.RXByteCtr = 0;
@@ -94,6 +90,8 @@ void I2C_WriteReg(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint8_t
 
 void I2C_ReadReg(uint8_t dev_addr, uint8_t reg_addr, uint8_t count)
 {
+    while(i2c.MasterMode != IDLE_MODE); // TODO: Consider an interrupt-based approach, instead of this crude approach
+
     // Initialize state machine
     i2c.MasterMode = TX_REG_ADDRESS_MODE;
     i2c.RegAddr = reg_addr;
@@ -129,7 +127,7 @@ __interrupt void USCI_B0_I2C_ISR(void)
             rx_val = UCB0RXBUF;
             if (i2c.RXByteCtr)
             {
-                i2c.RXBuffer[i2c.RXIndex++] = rx_val;
+              i2c.RXBuffer[i2c.RXIndex++] = rx_val;
               i2c.RXByteCtr--;
             }
 

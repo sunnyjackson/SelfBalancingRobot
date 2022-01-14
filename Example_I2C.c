@@ -28,7 +28,7 @@ void main(void)
 	uint8_t data[] = {10, 11, 12, 13, 14, 15};
 	while(1)
 	{
-	    I2C_WriteReg(slaveAddr, 0x43, data, 6);
+	    I2C_WriteBuffer(slaveAddr, 0x43, data, 6);
 	    for(i=0; i<100; i++);   // delay
 	    I2C_ReadReg(slaveAddr, 0x43, 6);
 	    for(i=0; i<100; i++);   // delay
