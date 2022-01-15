@@ -39,7 +39,7 @@ void UART_Init(void)
         uart.TXIndex = 0;
 }
 
-void UART_Tx(uint8_t* data, uint8_t count)
+void UART_Tx(char* data, uint8_t count)
 {
     //Initialize uart state machine
         // TODO: Consider rewriting this module so that it doesn't need to use CopyArray, and instead just uses the pointer it receives to step through the buffer (although this would require no modifications to that buffer during the transmission period...)

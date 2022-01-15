@@ -8,6 +8,13 @@ uint8_t MPU6050_CheckI2C(void);
 // Verify successful register configurations after MPU6050_Init()
 uint8_t MPU6050_TestRegConfig(void);
 
+// Read a single set of values from accelerometer
+void MPU6050_ReadAccel(int16_t* a);
+
+// Read a single set of values from gyroscope
+void MPU6050_ReadGyro(int16_t* g);
+
+
 // Read all contents from MPU6050 FIFO
 
 
