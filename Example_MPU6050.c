@@ -52,6 +52,17 @@ void main(void)
     __delay_cycles(10000);
     memset(uart_msg, 0, strlen(uart_msg));
 
+    if(MPU6050_SelfTest()){
+        snprintf(uart_msg, sizeof(uart_msg), "\n\r--ERROR: MPU6050 Sensor SelfTest Failed");
+        UART_Tx(uart_msg,strlen(uart_msg));
+    }else{
+        snprintf(uart_msg, sizeof(uart_msg), "\n\rMPU6050 Sensor SelfTest Passed");
+        UART_Tx(uart_msg,strlen(uart_msg));
+    }
+    __delay_cycles(10000);
+    memset(uart_msg, 0, strlen(uart_msg));
+
+
 
     int16_t a[3];
     int16_t g[3];

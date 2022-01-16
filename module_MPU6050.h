@@ -14,6 +14,9 @@ void MPU6050_ReadAccel(int16_t* a);
 // Read a single set of values from gyroscope
 void MPU6050_ReadGyro(int16_t* g);
 
+// Perform a Self Test
+uint8_t MPU6050_SelfTest(void);
+
 
 // Read all contents from MPU6050 FIFO
 
