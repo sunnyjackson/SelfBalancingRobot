@@ -7,22 +7,6 @@
 
 
 //--------------------------------------------------------
-//-- Public Functions
-// Initialize I2C Port
-void I2C_Init(void);
-
-// Write 1-byte to I2C Port
-void I2C_WriteByte(uint8_t dev_addr, uint8_t reg_addr, uint8_t reg_data);
-
-// Write buffer to I2C Port
-void I2C_WriteBuffer(uint8_t dev_addr, uint8_t reg_addr, uint8_t* reg_data, uint8_t count);
-
-// Read from I2C Port
-void I2C_ReadReg(uint8_t dev_addr, uint8_t reg_addr, uint8_t count);
-
-
-
-//--------------------------------------------------------
 //-- Declare I2C State Machine Data Structures
 // TODO Rewrite the I2C module so that these data structures are private, and the Buffers to exchange data with the application program are just pointers provided by the calling function
 typedef enum I2C_ModeEnum{
@@ -44,3 +28,22 @@ typedef struct I2CSM{
     uint8_t TXIndex;                    // The index of the next byte to be transmitted in TXBuffer
 }I2CStateMachine;
 I2CStateMachine i2c;
+
+
+//--------------------------------------------------------
+//-- Public Functions
+// Initialize I2C Port
+void I2C_Init(void);
+
+// Write 1-byte to I2C Port
+void I2C_WriteByte(uint8_t dev_addr, uint8_t reg_addr, uint8_t reg_data);
+
+// Read 1-byte from I2C Port
+uint8_t I2C_ReadByte(uint8_t dev_addr, uint8_t reg_addr);
+
+// Write from buffer to I2C Port
+void I2C_WriteBuffer(uint8_t dev_addr, uint8_t reg_addr, uint8_t* reg_data, uint8_t count);
+
+// Read to buffer from I2C Port
+void I2C_ReadBuffer(uint8_t dev_addr, uint8_t reg_addr, uint8_t count);
+

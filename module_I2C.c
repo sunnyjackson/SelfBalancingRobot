@@ -31,6 +31,8 @@ void I2C_Init(void)
 
 void I2C_WriteByte(uint8_t dev_addr, uint8_t reg_addr, uint8_t reg_data)
 {
+    while(i2c.MasterMode != IDLE_MODE);
+
     // Initialize state machine
     i2c.MasterMode = TX_REG_ADDRESS_MODE;
     i2c.RegAddr = reg_addr;
@@ -52,18 +54,20 @@ void I2C_WriteByte(uint8_t dev_addr, uint8_t reg_addr, uint8_t reg_data)
     UCB0CTL1 |= UCTR + UCTXSTT;              // I2C TX, start condition
     __enable_interrupt(); // I replace this line, because I don't understand LPM on the MSP430: __bis_SR_register(LPM0_bits + GIE);              // Enter LPM0 w/ interrupts
 
+    while(i2c.MasterMode != IDLE_MODE); // wait for session to be complete
+
     return;
 }
 
 void I2C_WriteBuffer(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint8_t count)
 {
-    while(i2c.MasterMode != IDLE_MODE); // TODO: Consider an interrupt-based approach, instead of this crude approach
+    while(i2c.MasterMode != IDLE_MODE);
 
     // Initialize state machine
     i2c.MasterMode = TX_REG_ADDRESS_MODE;
     i2c.RegAddr = reg_addr;
 
-    //Copy register data to TXBuffer
+    // Copy register data to TXBuffer
     uint8_t copyIndex;
     for (copyIndex = 0; copyIndex < count; copyIndex++)
     {
@@ -84,13 +88,15 @@ void I2C_WriteBuffer(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint
     UCB0CTL1 |= UCTR + UCTXSTT;              // I2C TX, start condition
     __enable_interrupt(); // I replace this line, because I don't understand LPM on the MSP430: __bis_SR_register(LPM0_bits + GIE);              // Enter LPM0 w/ interrupts
 
+    while(i2c.MasterMode != IDLE_MODE); // wait for session to be complete
+
     return;
 }
 
 
-void I2C_ReadReg(uint8_t dev_addr, uint8_t reg_addr, uint8_t count)
+void I2C_ReadBuffer(uint8_t dev_addr, uint8_t reg_addr, uint8_t count)
 {
-    while(i2c.MasterMode != IDLE_MODE); // TODO: Consider an interrupt-based approach, instead of this crude approach
+    while(i2c.MasterMode != IDLE_MODE);
 
     // Initialize state machine
     i2c.MasterMode = TX_REG_ADDRESS_MODE;
@@ -109,7 +115,35 @@ void I2C_ReadReg(uint8_t dev_addr, uint8_t reg_addr, uint8_t count)
     UCB0CTL1 |= UCTR + UCTXSTT;            // I2C TX, start condition
     __enable_interrupt(); // I replace this line, because I don't understand LPM on the MSP430: __bis_SR_register(LPM0_bits + GIE);              // Enter LPM0 w/ interrupts
 
+    while(i2c.MasterMode != IDLE_MODE); // wait for session to be complete
+
     return;
+}
+
+uint8_t I2C_ReadByte(uint8_t dev_addr, uint8_t reg_addr)
+{
+    while(i2c.MasterMode != IDLE_MODE);
+
+    // Initialize state machine
+    i2c.MasterMode = TX_REG_ADDRESS_MODE;
+    i2c.RegAddr = reg_addr;
+    i2c.RXByteCtr = 1;
+    i2c.TXByteCtr = 0;
+    i2c.RXIndex = 0;
+    i2c.TXIndex = 0;
+
+    // Initialize slave address and interrupts
+    UCB0I2CSA = dev_addr;
+    UCB0IFG &= ~(UCTXIFG + UCRXIFG);       // Clear any pending interrupts
+    UCB0IE &= ~UCRXIE;                     // Disable RX interrupt
+    UCB0IE |= UCTXIE;                      // Enable TX interrupt
+
+    UCB0CTL1 |= UCTR + UCTXSTT;            // I2C TX, start condition
+    __enable_interrupt();
+
+    while(i2c.MasterMode != IDLE_MODE); // wait for session to be complete
+
+    return i2c.RXBuffer[0];
 }
 
 //--------------------------------------------------------

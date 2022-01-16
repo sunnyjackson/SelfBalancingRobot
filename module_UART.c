@@ -1,5 +1,6 @@
 #include <msp430.h>
 #include <stdint.h>
+#include <string.h>
 #include "module_UART.h"
 
 //--------------------------------------------------------
@@ -41,8 +42,9 @@ void UART_Init(void)
 
 void UART_Tx(char* data, uint8_t count)
 {
+    while(uart.TXByteCtr);
+
     //Initialize uart state machine
-        // TODO: Consider rewriting this module so that it doesn't need to use CopyArray, and instead just uses the pointer it receives to step through the buffer (although this would require no modifications to that buffer during the transmission period...)
     uint8_t copyIndex;
     for (copyIndex = 0; copyIndex < count; copyIndex++)
     {
@@ -58,8 +60,37 @@ void UART_Tx(char* data, uint8_t count)
     UCA1TXBUF = uart.TXBuffer[uart.TXIndex++];
     uart.TXByteCtr--;
     __enable_interrupt();
+
+    while(uart.TXByteCtr);
 }
 
+void UART_print(char* msg)
+{
+    while(uart.TXByteCtr);
+
+    //Initialize uart state machine
+    uint8_t i = 0;
+    while (msg[i])
+    {
+        uart.TXBuffer[i] = msg[i];
+        i++;
+    }
+    uart.TXByteCtr = i;
+    uart.TXIndex = 0;
+
+    // Initialize interrupts
+    UCA1IFG &= ~(UCTXIFG + UCRXIFG);         // Clear any pending interrupts
+    UCA1IE |= UCRXIE;                        // Enable RX interrupt, which has TxD piped into it to indicate when the TxD shift register is empty
+
+    UCA1TXBUF = uart.TXBuffer[uart.TXIndex++];
+    uart.TXByteCtr--;
+    __enable_interrupt();
+
+    while(uart.TXByteCtr);
+
+    // Clear out the msg pointer, so that the calling function can reuse it without needing to clear it
+    memset(msg, 0, MAX_UARTBUFFER_SIZE);
+}
 
 //--------------------------------------------------------
 //-- UART ISR

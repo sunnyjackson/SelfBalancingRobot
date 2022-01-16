@@ -1,10 +1,9 @@
 #include <msp430.h>				
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
-#include "module_UART.h"
-#include "module_I2C.h"
 #include "module_MPU6050.h"
+#include "module_UART.h"
+
 
 /*
   This example is based on:
@@ -15,9 +14,6 @@
 
 */
 
-//-- Globals
-char uart_msg[MAX_UARTBUFFER_SIZE];           // General purpose buffer for storing strings to printout over the UART line
-
 //-- Function Prototypes
 void LED_Init(void);
 
@@ -25,53 +21,34 @@ void main(void)
 {
     //-- initializations
 	WDTCTL = WDTPW | WDTHOLD;		// stop watchdog timer
-
 	LED_Init();                     // Initialize on-board LED, for use as a monitor when troubleshooting
-
 	UART_Init();                    // Initialize UART port, for reading out telemetry points in a desktop terminal
-
 	MPU6050_Init();                 // Initialize the MPU6050 port
-	memset(uart_msg, 0, MAX_UARTBUFFER_SIZE);
 	if(MPU6050_CheckI2C()){
-        snprintf(uart_msg, sizeof(uart_msg), "\n\r--ERROR: I2C Bus Functional Test Failed");
-        UART_Tx(uart_msg,strlen(uart_msg));
+	    UART_print("\n\r--ERROR: I2C Bus Functional Test Failed");
     }else{
-        snprintf(uart_msg, sizeof(uart_msg), "\n\rI2C Bus Functional Test Passed");
-        UART_Tx(uart_msg,strlen(uart_msg));
+        UART_print("\n\rI2C Bus Functional Test Passed");
     }
-    __delay_cycles(10000);
-    memset(uart_msg, 0, strlen(uart_msg));
-
     if(MPU6050_TestRegConfig()){
-        snprintf(uart_msg, sizeof(uart_msg), "\n\r--ERROR: MPU6050 Register Initialization Verification Failed");
-        UART_Tx(uart_msg,strlen(uart_msg));
+        UART_print("\n\r--ERROR: MPU6050 Register Initialization Verification Failed");
     }else{
-        snprintf(uart_msg, sizeof(uart_msg), "\n\rMPU6050 Register Initialization Verification Passed");
-        UART_Tx(uart_msg,strlen(uart_msg));
+        UART_print("\n\rMPU6050 Register Initialization Verification Passed");
     }
-    __delay_cycles(10000);
-    memset(uart_msg, 0, strlen(uart_msg));
-
     if(MPU6050_SelfTest()){
-        snprintf(uart_msg, sizeof(uart_msg), "\n\r--ERROR: MPU6050 Sensor SelfTest Failed");
-        UART_Tx(uart_msg,strlen(uart_msg));
+        UART_print("\n\r--ERROR: MPU6050 Sensor SelfTest Failed");
     }else{
-        snprintf(uart_msg, sizeof(uart_msg), "\n\rMPU6050 Sensor SelfTest Passed");
-        UART_Tx(uart_msg,strlen(uart_msg));
+        UART_print("\n\rMPU6050 Sensor SelfTest Passed");
     }
-    __delay_cycles(10000);
-    memset(uart_msg, 0, strlen(uart_msg));
 
-
-    UART_Tx("\n\r\n\r",2);
-	while(1)
+    UART_print("\n");
+    int16_t_xyz a;
+    char msg[MAX_UARTBUFFER_SIZE];
+	while(1) // use this loop to review accelerometer values, and verify that orienting the gravitation vector along each axis yields the expected readouts
 	{
-	    //MPU6050_ReadAccel(a);
-	    //MPU6050_ReadGyro(g);
-	    //snprintf(uart_msg, sizeof(uart_msg), "x: %i, y: %i, z:%i, x: %i, y: %i, z:%i \r",a[0], a[1], a[2], g[0], g[1], g[2]);
-	    //UART_Tx(uart_msg,strlen(uart_msg));
-	    __delay_cycles(10000);
-	    //memset(uart_msg, 0, strlen(uart_msg));
+	    MPU6050_ReadAccel(&a);
+	    snprintf(msg, MAX_UARTBUFFER_SIZE, "\rz: %i, y: %i, x:%i",a.z, a.y, a.x);
+	    UART_print(msg);
+	    UART_print("                                      "); // hacky method for clearing the terminal screen
 	}
 }
 
