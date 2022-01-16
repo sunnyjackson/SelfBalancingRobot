@@ -103,32 +103,32 @@ uint8_t MPU6050_TestRegConfig(void)
 /*--------------------------------------------------------------------------------
 Function    : MPU6050_ReadAccel
 Purpose     : Get raw value x, y, z of accel
-Parameters  : PACC_DATA_RAW - pointer to a struct store acc raw data
+Parameters  : pointer to a struct store acc data
 Return      : NULL
 --------------------------------------------------------------------------------*/
-void MPU6050_ReadAccel(int16_t* a)
+void MPU6050_ReadAccel(int16_t_xyz* a)
 {
     I2C_ReadReg(MPU6050_ADDRESS, MPU6050_ACCEL_XOUT_H, 6);
     while(i2c.MasterMode != IDLE_MODE);
-    a[0] = (i2c.RXBuffer[0]<<8 | i2c.RXBuffer[1]);// / 16384;
-    a[1] = (i2c.RXBuffer[2]<<8 | i2c.RXBuffer[3]);// / 16384;
-    a[2] = (i2c.RXBuffer[4]<<8 | i2c.RXBuffer[5]);// / 16384;
+    a->x = (i2c.RXBuffer[0]<<8 | i2c.RXBuffer[1]);// / 16384;
+    a->y = (i2c.RXBuffer[2]<<8 | i2c.RXBuffer[3]);// / 16384;
+    a->z = (i2c.RXBuffer[4]<<8 | i2c.RXBuffer[5]);// / 16384;
 }
 
 
 /*--------------------------------------------------------------------------------
 Function    : MPU6050_GetGyroValueRaw
 Purpose     : Get raw value x, y, z of Gyro
-Parameters  : PGYRO_DATA_RAW - pointer to struct store Gyro data
+Parameters  : pointer to struct store gyro data
 Return      : NULL
 --------------------------------------------------------------------------------*/
-void MPU6050_ReadGyro(int16_t* g)
+void MPU6050_ReadGyro(int16_t_xyz* g)
 {
     I2C_ReadReg(MPU6050_ADDRESS, MPU6050_GYRO_XOUT_H, 6);
     while(i2c.MasterMode != IDLE_MODE);
-    g[0] = (i2c.RXBuffer[0]<<8 | i2c.RXBuffer[1]);// / 131;
-    g[1] = (i2c.RXBuffer[2]<<8 | i2c.RXBuffer[3]);// / 131;
-    g[2] = (i2c.RXBuffer[4]<<8 | i2c.RXBuffer[5]);// / 131;
+    g->x = (i2c.RXBuffer[0]<<8 | i2c.RXBuffer[1]);// / 131;
+    g->y = (i2c.RXBuffer[2]<<8 | i2c.RXBuffer[3]);// / 131;
+    g->z = (i2c.RXBuffer[4]<<8 | i2c.RXBuffer[5]);// / 131;
 }
 
 
@@ -160,21 +160,21 @@ uint8_t MPU6050_SelfTest(void)
     I2C_ReadReg(MPU6050_ADDRESS, MPU6050_ACCEL_CONFIG, 1);
     } while (i2c.RXBuffer[0] != ACCEL_SELFTEST_OFF[0]);
     // Gather an average reading, with self-test OFF
-    int16_t a[3], g[3];
+    int16_t_xyz a, g;
     int16_t a_avg_off[3] = {0, 0, 0};
     int16_t g_avg_off[3] = {0, 0, 0};
     uint8_t num_samples = 100;
     uint8_t i;
     for (i = 0; i < num_samples; i++)
     {
-        MPU6050_ReadAccel(a);
-        a_avg_off[0] += a[0]/num_samples;
-        a_avg_off[1] += a[1]/num_samples;
-        a_avg_off[2] += a[2]/num_samples;
-        MPU6050_ReadGyro(g);
-        g_avg_off[0] += g[0]/num_samples;
-        g_avg_off[1] += g[1]/num_samples;
-        g_avg_off[2] += g[2]/num_samples;
+        MPU6050_ReadAccel(&a);
+        a_avg_off[0] += a.x/num_samples;
+        a_avg_off[1] += a.y/num_samples;
+        a_avg_off[2] += a.z/num_samples;
+        MPU6050_ReadGyro(&g);
+        g_avg_off[0] += g.x/num_samples;
+        g_avg_off[1] += g.y/num_samples;
+        g_avg_off[2] += g.z/num_samples;
         __delay_cycles(25000); // delay 1 ms to ensure we gather NEW sensor measurement (which arrives at 1 kHz, relative to our 25 MHz MSP430 clock)
     }
 
@@ -193,14 +193,14 @@ uint8_t MPU6050_SelfTest(void)
     int16_t g_avg_on[3] = {0, 0, 0};
     for (i = 0; i < num_samples; i++)
     {
-        MPU6050_ReadAccel(a);
-        a_avg_on[0] += a[0]/num_samples;
-        a_avg_on[1] += a[1]/num_samples;
-        a_avg_on[2] += a[2]/num_samples;
-        MPU6050_ReadGyro(g);
-        g_avg_on[0] += g[0]/num_samples;
-        g_avg_on[1] += g[1]/num_samples;
-        g_avg_on[2] += g[2]/num_samples;
+        MPU6050_ReadAccel(&a);
+        a_avg_on[0] += a.x/num_samples;
+        a_avg_on[1] += a.y/num_samples;
+        a_avg_on[2] += a.z/num_samples;
+        MPU6050_ReadGyro(&g);
+        g_avg_on[0] += g.x/num_samples;
+        g_avg_on[1] += g.y/num_samples;
+        g_avg_on[2] += g.z/num_samples;
         __delay_cycles(25000); // delay 1 ms to ensure we gather NEW sensor measurement (which arrives at 1 kHz, relative to our 25 MHz MSP430 clock)
     }
 

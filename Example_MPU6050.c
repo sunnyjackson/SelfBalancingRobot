@@ -63,18 +63,15 @@ void main(void)
     memset(uart_msg, 0, strlen(uart_msg));
 
 
-
-    int16_t a[3];
-    int16_t g[3];
     UART_Tx("\n\r\n\r",2);
 	while(1)
 	{
-	    MPU6050_ReadAccel(a);
-	    MPU6050_ReadGyro(g);
-	    snprintf(uart_msg, sizeof(uart_msg), "x: %i, y: %i, z:%i, x: %i, y: %i, z:%i \r",a[0], a[1], a[2], g[0], g[1], g[2]);
-	    UART_Tx(uart_msg,strlen(uart_msg));
+	    //MPU6050_ReadAccel(a);
+	    //MPU6050_ReadGyro(g);
+	    //snprintf(uart_msg, sizeof(uart_msg), "x: %i, y: %i, z:%i, x: %i, y: %i, z:%i \r",a[0], a[1], a[2], g[0], g[1], g[2]);
+	    //UART_Tx(uart_msg,strlen(uart_msg));
 	    __delay_cycles(10000);
-	    memset(uart_msg, 0, strlen(uart_msg));
+	    //memset(uart_msg, 0, strlen(uart_msg));
 	}
 }
 

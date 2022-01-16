@@ -1,4 +1,13 @@
+//--------------------------------------------------------
+//-- Public Struct, for organizing (x,y,z) parameters
+typedef struct XYZ{
+    int16_t x;
+    int16_t y;
+    int16_t z;
+} int16_t_xyz;
 
+//--------------------------------------------------------
+//-- Public Functions
 // Initialize MPU6050, using pre-defined configuration settings
 void MPU6050_Init(void);
 
@@ -9,17 +18,10 @@ uint8_t MPU6050_CheckI2C(void);
 uint8_t MPU6050_TestRegConfig(void);
 
 // Read a single set of values from accelerometer
-void MPU6050_ReadAccel(int16_t* a);
+void MPU6050_ReadAccel(int16_t_xyz* a);
 
 // Read a single set of values from gyroscope
-void MPU6050_ReadGyro(int16_t* g);
+void MPU6050_ReadGyro(int16_t_xyz* g);
 
 // Perform a Self Test
 uint8_t MPU6050_SelfTest(void);
-
-
-// Read all contents from MPU6050 FIFO
-
-
-// Read some contents from MPU 6050 FIFO (maybe the most recent 10)
-
