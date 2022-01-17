@@ -302,10 +302,13 @@ Purpose     : Return an angle estimate, by combining accelerometer and gyroscope
 Parameters  : none
 Return      : angle estimate
 --------------------------------------------------------------------------------*/
-float MPU6050_ReadAngle(void)
+int16_t MPU6050_ReadAngle(void)
 {
-    static float theta = 0;
-    float dt = 0.07; // integration timestep
+#define RAD2DEG         7506            // conversion between radians & degrees, represented in base 131 system
+#define COEF_1          12867           // coefficient pi/4, represented in Q1.14 number system
+
+
+    static int32_t theta = 0;
 
     // Read in values
     int16_t_xyz g, a;
@@ -315,11 +318,32 @@ float MPU6050_ReadAngle(void)
     // toggle P8.2, signaling the beginning of the float operation
     P8OUT ^= BIT2;
 
-    float theta_a = atan2( (float) a.y/16384 , (float) a.x/16384) * 180/3.14159265;
-    float theta_g = (float)-g.z/131*dt + theta;
-    theta = 0.98*(theta_g) + 0.02*(theta_a);
+    // There's still quite a bit of integer division in here, since we have a base 1/131 number system. We're already completing this function in under 1 ms, but if we wanted to go faster then we should switch to a binary scaled system
+
+    // Propagate angle based on gyro, in base 1/131 fixed-point number system
+    int32_t theta_g = theta - (g.z>>6);
+
+    // Estimate angle based on accelerometer, using a fixed-point implementation of theta_a = atan2(y,x), ref: https://dspguru.com/dsp/tricks/fixed-point-atan2-with-self-normalization/
+    int32_t theta_a;
+    int32_t abs_y = abs(a.y) + 0b1; // kludge to prevent division-by-0 edge case
+    if (a.x >= 0){
+        theta_a = (int32_t) COEF_1 - ((int32_t) COEF_1*((int32_t) a.x - abs_y)) / ((int32_t) a.x + abs_y);
+    }else{
+        theta_a = (int32_t) 3*COEF_1 - ((int32_t) COEF_1*((int32_t) a.x + abs_y)) / (abs_y - (int32_t) a.x);
+    }
+    if(a.y < 0){
+        theta_a = -theta_a;
+    }
+    theta_a *= RAD2DEG/131; // convert to degrees
+
+     // Convert accelerometer estimate from Q1.14 number system into gyro number system
+    int32_t theta_a_hat = 0;
+    theta_a_hat = (theta_a * 131) >> 14; // Note, I think this right-bit-shift should include a rounding behavior, to avoid throwing away precision
+
+    // Complementary Filter: combine angle estimates
+    theta = theta_g - ((theta_g)>>5) + ((theta_a_hat)>>5); // roughly equivalent to 0.98*theta_g + 0.02*theta_a_hat
 
     P8OUT ^= BIT2;
 
-    return theta;
+    return (int16_t) theta;
 }

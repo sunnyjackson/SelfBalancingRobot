@@ -24,7 +24,7 @@ void MPU6050_ReadAccel(int16_t_xyz* a);
 void MPU6050_ReadGyro(int16_t_xyz* g);
 
 // Read Angle Estimate from sensor (using a complementary filter to combine gyro and accelerometer estimate)
-float MPU6050_ReadAngle(void);
+int16_t MPU6050_ReadAngle(void);
 
 // Perform a Self Test
 uint8_t MPU6050_SelfTest(void);

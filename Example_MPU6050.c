@@ -34,30 +34,18 @@ void main(void)
     }else{
         UART_print("\n\rMPU6050 Register Initialization Verification Passed");
     }
-    //if(MPU6050_SelfTest()){
-    //    UART_print("\n\r--ERROR: MPU6050 Sensor SelfTest Failed");
-    //}else{
-    //    UART_print("\n\rMPU6050 Sensor SelfTest Passed");
-    //}
-
-    //MPU6050_Calibrate();
     MPU6050_SetCalibration();
 
+    //-- main loop
     UART_print("\n");
-    int16_t_xyz a;
-    float theta;
+    int16_t theta;
     char msg[MAX_UARTBUFFER_SIZE];
-	while(1) // use this loop to review accelerometer values, and verify that orienting the gravitation vector along each axis yields the expected readouts
+	while(1)
 	{
-	    //MPU6050_ReadAccel(&a);
-	    //snprintf(msg, MAX_UARTBUFFER_SIZE, "\rx: %i, y: %i, z:%i",a.x, a.y, a.z);
-	    //UART_print(msg);
-	    //UART_print("                                      "); // hacky method for clearing the terminal screen
-
-	    theta = MPU6050_ReadAngle();
-	    snprintf(msg, MAX_UARTBUFFER_SIZE, "\rtheta: %f",theta);
+	    theta = MPU6050_ReadAngle()/131;
+	    snprintf(msg, MAX_UARTBUFFER_SIZE, "\rtheta: %i",theta);
 	    UART_print(msg);
-	    UART_print("                                      "); // hacky method for clearing the terminal screen
+	    UART_print("               "); // hacky method for clearing the terminal screen
 	}
 }
 
