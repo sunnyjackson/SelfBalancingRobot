@@ -7,7 +7,12 @@
 
 
 //--------------------------------------------------------
-//-- I2C Module Public Functions
+//-- Private Global variables
+int16_t_xyz a_offset, g_offset;
+
+
+//--------------------------------------------------------
+//-- MPU6050 Module Public Functions
 void MPU6050_Init(void)
 {
     // Initialize I2C connection to the MPU6050
@@ -35,7 +40,13 @@ void MPU6050_Init(void)
     // Select clock source
     I2C_WriteByte(MPU6050_ADDRESS, MPU6050_PWR_MGMT_1, CLKSEL_3);
 
-    // TODO Perform self-test? (see accel_config and gyro_config registers)
+    // Initialize offsets
+    a_offset.x = 0;
+    a_offset.y = 0;
+    a_offset.z = 0;
+    g_offset.x = 0;
+    g_offset.y = 0;
+    g_offset.z = 0;
 }
 
 
@@ -91,9 +102,9 @@ Return      : NULL
 void MPU6050_ReadAccel(int16_t_xyz* a)
 {
     I2C_ReadBuffer(MPU6050_ADDRESS, MPU6050_ACCEL_XOUT_H, 6);
-    a->x = (i2c.RXBuffer[0]<<8 | i2c.RXBuffer[1]);// / 16384;
-    a->y = (i2c.RXBuffer[2]<<8 | i2c.RXBuffer[3]);// / 16384;
-    a->z = (i2c.RXBuffer[4]<<8 | i2c.RXBuffer[5]);// / 16384;
+    a->x = (i2c.RXBuffer[0]<<8 | i2c.RXBuffer[1]) + a_offset.x;// / 16384;
+    a->y = (i2c.RXBuffer[2]<<8 | i2c.RXBuffer[3]) + a_offset.y;// / 16384;
+    a->z = (i2c.RXBuffer[4]<<8 | i2c.RXBuffer[5]) + a_offset.z;// / 16384;
 }
 
 
@@ -106,11 +117,45 @@ Return      : NULL
 void MPU6050_ReadGyro(int16_t_xyz* g)
 {
     I2C_ReadBuffer(MPU6050_ADDRESS, MPU6050_GYRO_XOUT_H, 6);
-    g->x = (i2c.RXBuffer[0]<<8 | i2c.RXBuffer[1]);// / 131;
-    g->y = (i2c.RXBuffer[2]<<8 | i2c.RXBuffer[3]);// / 131;
-    g->z = (i2c.RXBuffer[4]<<8 | i2c.RXBuffer[5]);// / 131;
+    g->x = (i2c.RXBuffer[0]<<8 | i2c.RXBuffer[1]) + g_offset.x;// / 131;
+    g->y = (i2c.RXBuffer[2]<<8 | i2c.RXBuffer[3]) + g_offset.y;// / 131;
+    g->z = (i2c.RXBuffer[4]<<8 | i2c.RXBuffer[5]) + g_offset.z;// / 131;
 }
 
+
+void GetMeanAccel(int16_t_xyz* a_mean, uint16_t num_samples)
+{
+    // Gather an average reading, with self-test OFF
+    int16_t_xyz a;
+    uint16_t i;
+    a_mean->x = 0;
+    a_mean->y = 0;
+    a_mean->z = 0;
+    for (i = 0; i < num_samples; i++)
+    {
+        MPU6050_ReadAccel(&a);
+        a_mean->x += a.x/num_samples;
+        a_mean->y += a.y/num_samples;
+        a_mean->z += a.z/num_samples;
+    }
+}
+
+void GetMeanGyro(int16_t_xyz* g_mean, uint16_t num_samples)
+{
+    // Gather an average reading, with self-test OFF
+    int16_t_xyz g;
+    uint16_t i;
+    g_mean->x = 0;
+    g_mean->y = 0;
+    g_mean->z = 0;
+    for (i = 0; i < num_samples; i++)
+    {
+        MPU6050_ReadGyro(&g);
+        g_mean->x += g.x/num_samples;
+        g_mean->y += g.y/num_samples;
+        g_mean->z += g.z/num_samples;
+    }
+}
 
 /*--------------------------------------------------------------------------------
 Function    : MPU6050_SelfTest
@@ -133,40 +178,18 @@ uint8_t MPU6050_SelfTest(void)
     I2C_WriteByte(MPU6050_ADDRESS, MPU6050_GYRO_CONFIG, GYRO_SELFTEST_OFF);
     I2C_WriteByte(MPU6050_ADDRESS, MPU6050_ACCEL_CONFIG, ACCEL_SELFTEST_OFF);
     // Gather an average reading, with self-test OFF
-    int16_t_xyz a, g;
-    int16_t a_avg_off[3] = {0, 0, 0};
-    int16_t g_avg_off[3] = {0, 0, 0};
-    uint8_t num_samples = 100;
-    uint8_t i;
-    for (i = 0; i < num_samples; i++)
-    {
-        MPU6050_ReadAccel(&a);
-        a_avg_off[0] += a.x/num_samples;
-        a_avg_off[1] += a.y/num_samples;
-        a_avg_off[2] += a.z/num_samples;
-        MPU6050_ReadGyro(&g);
-        g_avg_off[0] += g.x/num_samples;
-        g_avg_off[1] += g.y/num_samples;
-        g_avg_off[2] += g.z/num_samples;
-    }
+    int16_t_xyz a_avg_off, g_avg_off;
+    uint16_t num_samples = 300;
+    GetMeanAccel(&a_avg_off, num_samples);
+    GetMeanGyro(&g_avg_off, num_samples);
 
     // Turn ON self-test mode
     I2C_WriteByte(MPU6050_ADDRESS, MPU6050_GYRO_CONFIG, GYRO_SELFTEST_ON);
     I2C_WriteByte(MPU6050_ADDRESS, MPU6050_ACCEL_CONFIG, ACCEL_SELFTEST_ON);
     // Gather an average reading, with self-test ON
-    int16_t a_avg_on[3] = {0, 0, 0};
-    int16_t g_avg_on[3] = {0, 0, 0};
-    for (i = 0; i < num_samples; i++)
-    {
-        MPU6050_ReadAccel(&a);
-        a_avg_on[0] += a.x/num_samples;
-        a_avg_on[1] += a.y/num_samples;
-        a_avg_on[2] += a.z/num_samples;
-        MPU6050_ReadGyro(&g);
-        g_avg_on[0] += g.x/num_samples;
-        g_avg_on[1] += g.y/num_samples;
-        g_avg_on[2] += g.z/num_samples;
-    }
+    int16_t_xyz a_avg_on, g_avg_on;
+    GetMeanAccel(&a_avg_on, num_samples);
+    GetMeanGyro(&g_avg_on, num_samples);
 
     // Turn OFF self-test mode, returning register configurations to their initial states
     I2C_WriteByte(MPU6050_ADDRESS, MPU6050_GYRO_CONFIG, PS_SEL_SCALE_250);
@@ -190,16 +213,113 @@ uint8_t MPU6050_SelfTest(void)
 
     // Calculate Change from Factory Trim of the Self-Test Response
     float delta[6];
-    delta[0] = 100*((float)(a_avg_on[0] - a_avg_off[0]) - a_FT[0]) / a_FT[0];
-    delta[1] = 100*((float)(a_avg_on[1] - a_avg_off[1]) - a_FT[1]) / a_FT[1];
-    delta[2] = 100*((float)(a_avg_on[2] - a_avg_off[2]) - a_FT[2]) / a_FT[2];
-    delta[3] = 100*((float)(g_avg_on[0] - g_avg_off[0]) - g_FT[0]) / g_FT[0];
-    delta[4] = 100*((float)(g_avg_on[1] - g_avg_off[1]) - g_FT[1]) / g_FT[1];
-    delta[5] = 100*((float)(g_avg_on[2] - g_avg_off[2]) - g_FT[2]) / g_FT[2];
+    delta[0] = 100*((float)(a_avg_on.x - a_avg_off.x) - a_FT[0]) / a_FT[0];
+    delta[1] = 100*((float)(a_avg_on.y - a_avg_off.y) - a_FT[1]) / a_FT[1];
+    delta[2] = 100*((float)(a_avg_on.z - a_avg_off.z) - a_FT[2]) / a_FT[2];
+    delta[3] = 100*((float)(g_avg_on.x - g_avg_off.x) - g_FT[0]) / g_FT[0];
+    delta[4] = 100*((float)(g_avg_on.y - g_avg_off.y) - g_FT[1]) / g_FT[1];
+    delta[5] = 100*((float)(g_avg_on.z - g_avg_off.z) - g_FT[2]) / g_FT[2];
 
     // Determine if Self Test Response is within +/- 14% tolerance from Factory Trim
+    int i;
     for (i = 0; i < 6; i++){
         if(abs(delta[i]) > 14){return 1;} // out of tolerance
     }
     return 0; // all values within tolerance. self-test passed!
+}
+
+
+/*--------------------------------------------------------------------------------
+Function    : MPU6050_Calibrate
+Purpose     : Calibrate offsets for accelerometer and gyroscope
+Parameters  : none
+Return      : none
+--------------------------------------------------------------------------------*/
+void MPU6050_Calibrate(void)
+{
+    // Define convergence tolerances
+    uint8_t a_tol = 8;
+    uint8_t g_tol = 1;
+
+    // Get mean
+    uint16_t num_samples = 300;
+    int16_t_xyz a_mean, g_mean;
+    GetMeanAccel(&a_mean, num_samples);
+    GetMeanGyro(&g_mean, num_samples);
+
+    // Initialize offsets
+    a_offset.z = -a_mean.z/8;
+    a_offset.y = -a_mean.y/8;
+    a_offset.x = (16384-a_mean.x)/8; // When connected to my breadboard, gravity points along the +x vector
+    g_offset.x = -g_mean.x/4;
+    g_offset.y = -g_mean.y/4;
+    g_offset.z = -g_mean.z/4;
+
+    // Iterate on offsets until we converge within tolerances defined above
+    while (1){
+      P1OUT ^= BIT0; // toggle P1.0 LED for troubleshooting
+      int ready=0;
+
+      // Get the mean values from the sensor
+      GetMeanAccel(&a_mean, num_samples);
+      GetMeanGyro(&g_mean, num_samples);
+
+      if (abs(a_mean.z) <= a_tol) ready++;
+      else a_offset.z += -a_mean.z/a_tol;
+
+      if (abs(a_mean.y) <= a_tol) ready++;
+      else a_offset.y += -a_mean.y/a_tol;
+
+      if (abs(16384-a_mean.x) <= a_tol) ready++;
+      else a_offset.x += (16384-a_mean.x)/a_tol;
+
+      if (abs(g_mean.x) <= g_tol) ready++;
+      else g_offset.x += -g_mean.x/(g_tol+1);
+
+      if (abs(g_mean.y) <= g_tol) ready++;
+      else g_offset.y += -g_mean.y/(g_tol+1);
+
+      if (abs(g_mean.z) <= g_tol) ready++;
+      else g_offset.z += -g_mean.z/(g_tol+1);
+
+      if (ready==6) break;
+    }
+}
+
+void MPU6050_SetCalibration(void)
+{
+    a_offset.x = -580;
+    a_offset.y = 430;
+    a_offset.z = 3800;
+    g_offset.x = 395;
+    g_offset.y = 102;
+    g_offset.z = 177;
+}
+
+/*--------------------------------------------------------------------------------
+Function    : MPU6050_ReadAngle
+Purpose     : Return an angle estimate, by combining accelerometer and gyroscope data
+Parameters  : none
+Return      : angle estimate
+--------------------------------------------------------------------------------*/
+float MPU6050_ReadAngle(void)
+{
+    static float theta = 0;
+    float dt = 0.07; // integration timestep
+
+    // Read in values
+    int16_t_xyz g, a;
+    MPU6050_ReadGyro(&g);
+    MPU6050_ReadAccel(&a);
+
+    // toggle P8.2, signaling the beginning of the float operation
+    P8OUT ^= BIT2;
+
+    float theta_a = atan2( (float) a.y/16384 , (float) a.x/16384) * 180/3.14159265;
+    float theta_g = (float)-g.z/131*dt + theta;
+    theta = 0.98*(theta_g) + 0.02*(theta_a);
+
+    P8OUT ^= BIT2;
+
+    return theta;
 }

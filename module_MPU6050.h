@@ -23,5 +23,14 @@ void MPU6050_ReadAccel(int16_t_xyz* a);
 // Read a single set of values from gyroscope
 void MPU6050_ReadGyro(int16_t_xyz* g);
 
+// Read Angle Estimate from sensor (using a complementary filter to combine gyro and accelerometer estimate)
+float MPU6050_ReadAngle(void);
+
 // Perform a Self Test
 uint8_t MPU6050_SelfTest(void);
+
+// Calibrate Sensors
+void MPU6050_Calibrate(void);
+
+// Manually set sensor calibration (to avoid lengthy calibration)
+void MPU6050_SetCalibration(void);

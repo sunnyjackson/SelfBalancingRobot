@@ -97,7 +97,7 @@ void UART_print(char* msg)
 #pragma vector=USCI_A1_VECTOR
 __interrupt void USCI_A1_UART_ISR(void)
 {
-    P1OUT ^= BIT0; // toggle onboard LED, for debugging
+    //P1OUT ^= BIT0; // toggle onboard LED, for debugging
     switch(__even_in_range(UCA1IV,4))
     {
         case 0:break;                             // Vector 0 - no interrupt

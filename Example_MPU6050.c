@@ -34,19 +34,28 @@ void main(void)
     }else{
         UART_print("\n\rMPU6050 Register Initialization Verification Passed");
     }
-    if(MPU6050_SelfTest()){
-        UART_print("\n\r--ERROR: MPU6050 Sensor SelfTest Failed");
-    }else{
-        UART_print("\n\rMPU6050 Sensor SelfTest Passed");
-    }
+    //if(MPU6050_SelfTest()){
+    //    UART_print("\n\r--ERROR: MPU6050 Sensor SelfTest Failed");
+    //}else{
+    //    UART_print("\n\rMPU6050 Sensor SelfTest Passed");
+    //}
+
+    //MPU6050_Calibrate();
+    MPU6050_SetCalibration();
 
     UART_print("\n");
     int16_t_xyz a;
+    float theta;
     char msg[MAX_UARTBUFFER_SIZE];
 	while(1) // use this loop to review accelerometer values, and verify that orienting the gravitation vector along each axis yields the expected readouts
 	{
-	    MPU6050_ReadAccel(&a);
-	    snprintf(msg, MAX_UARTBUFFER_SIZE, "\rz: %i, y: %i, x:%i",a.z, a.y, a.x);
+	    //MPU6050_ReadAccel(&a);
+	    //snprintf(msg, MAX_UARTBUFFER_SIZE, "\rx: %i, y: %i, z:%i",a.x, a.y, a.z);
+	    //UART_print(msg);
+	    //UART_print("                                      "); // hacky method for clearing the terminal screen
+
+	    theta = MPU6050_ReadAngle();
+	    snprintf(msg, MAX_UARTBUFFER_SIZE, "\rtheta: %f",theta);
 	    UART_print(msg);
 	    UART_print("                                      "); // hacky method for clearing the terminal screen
 	}
@@ -61,4 +70,9 @@ void LED_Init(void)
     P1OUT &= 0x00;
     P1DIR &= 0x00;
     P1DIR |= BIT0;
+
+    //-- configure P8.2 GPIO for use as a monitor on a logic analyzer
+    P8OUT &= 0x00;
+    P8DIR &= 0x00;
+    P8DIR |= BIT2;
 }

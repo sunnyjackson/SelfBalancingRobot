@@ -151,10 +151,8 @@ uint8_t I2C_ReadByte(uint8_t dev_addr, uint8_t reg_addr)
 #pragma vector=USCI_B0_VECTOR
 __interrupt void USCI_B0_I2C_ISR(void)
 {
-    P1OUT ^= BIT0; // toggle P1.0 LED for troubleshooting
-
+    //P1OUT ^= BIT0; // toggle onboard LED, for debugging
     uint8_t rx_val = 0;
-
     switch(__even_in_range(UCB0IV, 0xC))
     {
         case USCI_I2C_UCRXIFG: // Data has been received and is ready to be pulled from the I2C receive buffer
@@ -173,7 +171,6 @@ __interrupt void USCI_B0_I2C_ISR(void)
             {
               UCB0IE &= ~UCRXIE;
               i2c.MasterMode = IDLE_MODE;
-              // I removed this line, because I don't understand LPM on the MSP430: __bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
             }
             break;
 
@@ -214,7 +211,6 @@ __interrupt void USCI_B0_I2C_ISR(void)
                           UCB0CTL1 |= UCTXSTP;     // Send stop condition
                           i2c.MasterMode = IDLE_MODE;
                           UCB0IE &= ~UCTXIE;                       // disable TX interrupt
-                          // I removed this line, because I don't understand LPM on the MSP430: __bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
                       }
                       break;
 
