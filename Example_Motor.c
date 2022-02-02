@@ -24,6 +24,7 @@ void main(void)
 	uint8_t grow= 1;
 	while(1)
 	{
+	    P1OUT ^= BIT0; // toggle LED to show aliveness
 	    Motor_SetDutyCycle(duty);
 	    if (grow){
 	        duty = (duty+1);
@@ -51,8 +52,4 @@ void LED_Init(void)
     P1DIR &= 0x00;
     P1DIR |= BIT0;
 
-    //-- configure P8.2 GPIO for use as a monitor on a logic analyzer
-    P8OUT &= 0x00;
-    P8DIR &= 0x00;
-    P8DIR |= BIT2;
 }

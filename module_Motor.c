@@ -8,7 +8,19 @@
 // Initialize Motor Interface
 void Motor_Init(void)
 {
-    //P1SEL |= BIT2+BIT3;                     // P1.2 and P1.3 options select
+    //-- set P6.3 and P6.4 for controlling motor direction
+    P6OUT &= 0x00;
+    P6DIR &= 0x00;
+    P6DIR |= BIT3;
+    P6DIR |= BIT4;
+    P6OUT |= BIT4;
+    P6OUT &= ~BIT3;
+
+    //-- configure P8.2 as PWM output
+    P8OUT &= 0x00;
+    P8DIR &= 0x00;
+    P8DIR |= BIT2;
+
     TA0CCR0 = 1000-1;                          // Set PWM Period
     TA0CCR1 = 500;                            // CCR1 PWM duty cycle
     TA0CCTL1 = OUTMOD_7;                      // CCR1 reset/set
