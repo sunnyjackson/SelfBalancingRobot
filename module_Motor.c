@@ -40,6 +40,27 @@ void Motor_SetDutyCycle(uint8_t duty)
     TA0CCR1 = duty*10; // CCR1 PWM duty cycle
 }
 
+// Initialize Motor Interface (1 = forward, -1 = backward, 0 = off)
+void Motor_Direction(int8_t dir)
+{
+    switch (dir){
+        case 1: // forward
+            P6OUT |= BIT4;
+            P6OUT &= ~BIT3;
+            break;
+
+        case -1: // backward
+            P6OUT &= ~BIT4;
+            P6OUT |= BIT3;
+            break;
+
+        default: // stop
+            P6OUT &= ~BIT4;
+            P6OUT &= ~BIT3;
+            break;
+    }
+}
+
 //--------------------------------------------------------
 //-- PWM Timer Interrupts
 #pragma vector=TIMER0_A0_VECTOR
