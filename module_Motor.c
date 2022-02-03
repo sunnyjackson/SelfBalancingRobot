@@ -21,8 +21,8 @@ void Motor_Init(void)
     P8DIR &= 0x00;
     P8DIR |= BIT2;
 
-    TA0CCR0 = 1000-1;                          // Set PWM Period
-    TA0CCR1 = 500;                            // CCR1 PWM duty cycle
+    TA0CCR0 = 2000-1;                          // Set PWM Period (2000 -> 500 Hz)
+    TA0CCR1 = 10;                              // CCR1 PWM duty cycle
     TA0CCTL1 = OUTMOD_7;                      // CCR1 reset/set
     TA0CTL |= TACLR; // Clear Timer A counter
     TA0CTL |= MC_1; // Count-up to CCR0
@@ -36,8 +36,16 @@ void Motor_Init(void)
 // Update Motor Duty Cycle, using a value between 0-100
 void Motor_SetDutyCycle(uint8_t duty)
 {
-    if (duty > 100){return;}
-    TA0CCR1 = duty*10; // CCR1 PWM duty cycle
+    uint8_t s = 20; // scale factor, to convert 0-100 duty cycle to TA0CCR clock cycles
+    if (duty >= 100){ // maximum duty cycle
+        TA0CCR1 = 99*s;
+    }
+    else if (duty < 25){ // threshold minimum duty cycle (25% threshold is good for a 500 Hz PWM frequency, with my motor)
+        TA0CCR1 = 1; // off
+    }
+    else{
+        TA0CCR1 = duty*s;
+    }
 }
 
 // Initialize Motor Interface (1 = forward, -1 = backward, 0 = off)
@@ -66,13 +74,17 @@ void Motor_Direction(int8_t dir)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void TIMER0_A0_ISR(void) // Period
 {
+    P6OUT |= BIT3; // monitor
     P8OUT |= BIT2;
     TA0CCTL0 &= ~CCIFG;
+    P6OUT &= ~BIT3; // monitor
 }
 #pragma vector=TIMER0_A1_VECTOR
 __interrupt void TIMER0_A1_ISR(void) // Duty Cycle
 {
+    P6OUT |= BIT4;
     P8OUT &= ~BIT2;
     TA0CCTL1 &= ~CCIFG;
+    P6OUT &= ~BIT4;
 }
 

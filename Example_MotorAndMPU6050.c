@@ -41,11 +41,6 @@ void main(void)
         }else{
             Motor_Direction(-1);
         }
-        snprintf(msg, MAX_UARTBUFFER_SIZE, "\rtheta: %i",angle);
-        UART_print(msg);
-        UART_print("               "); // hacky method for clearing the terminal screen
-
-        __delay_cycles(50000);
     }
 }
 

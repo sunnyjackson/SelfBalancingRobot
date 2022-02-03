@@ -315,9 +315,6 @@ int16_t MPU6050_ReadAngle(void)
     MPU6050_ReadGyro(&g);
     MPU6050_ReadAccel(&a);
 
-    // toggle P8.2, signaling the beginning of the float operation
-    P8OUT ^= BIT2;
-
     // There's still quite a bit of integer division in here, since we have a base 1/131 number system. We're already completing this function in under 1 ms, but if we wanted to go faster then we should switch to a binary scaled system
 
     // Propagate angle based on gyro, in base 1/131 fixed-point number system
@@ -342,8 +339,6 @@ int16_t MPU6050_ReadAngle(void)
 
     // Complementary Filter: combine angle estimates
     theta = theta_g - ((theta_g)>>5) + ((theta_a_hat)>>5); // roughly equivalent to 0.98*theta_g + 0.02*theta_a_hat
-
-    P8OUT ^= BIT2;
 
     return (int16_t) theta;
 }
