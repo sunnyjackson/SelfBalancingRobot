@@ -8,18 +8,25 @@
 // Initialize Motor Interface
 void Motor_Init(void)
 {
-    //-- set P6.3 and P6.4 for controlling motor direction
+    //-- set P6.3 and P6.4 for controlling left-motor direction
     P6OUT &= 0x00;
     P6DIR &= 0x00;
-    P6DIR |= BIT3;
     P6DIR |= BIT4;
+    P6DIR |= BIT3;
     P6OUT |= BIT4;
     P6OUT &= ~BIT3;
+    //-- set P6.1 and P6.2 for controlling right-motor direction
+    P6DIR |= BIT2;
+    P6DIR |= BIT1;
+    P6OUT |= BIT2;
+    P6OUT &= ~BIT1;
 
-    //-- configure P8.2 as PWM output
+    //-- configure P8.2 as PWM output for left-motor
     P8OUT &= 0x00;
     P8DIR &= 0x00;
     P8DIR |= BIT2;
+    //-- configure P8.1 as PWM output for right-motor
+    P8DIR |= BIT1;
 
     TA0CCR0 = 2000-1;                          // Set PWM Period (2000 -> 500 Hz)
     TA0CCR1 = 10;                              // CCR1 PWM duty cycle
@@ -55,16 +62,22 @@ void Motor_Direction(int8_t dir)
         case 1: // forward
             P6OUT |= BIT4;
             P6OUT &= ~BIT3;
+            P6OUT |= BIT2;
+            P6OUT &= ~BIT1;
             break;
 
         case -1: // backward
             P6OUT &= ~BIT4;
             P6OUT |= BIT3;
+            P6OUT &= ~BIT2;
+            P6OUT |= BIT1;
             break;
 
         default: // stop
             P6OUT &= ~BIT4;
             P6OUT &= ~BIT3;
+            P6OUT &= ~BIT2;
+            P6OUT &= ~BIT1;
             break;
     }
 }
@@ -74,17 +87,13 @@ void Motor_Direction(int8_t dir)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void TIMER0_A0_ISR(void) // Period
 {
-    P6OUT |= BIT3; // monitor
-    P8OUT |= BIT2;
+    P8OUT |= (BIT2 & BIT1);
     TA0CCTL0 &= ~CCIFG;
-    P6OUT &= ~BIT3; // monitor
 }
 #pragma vector=TIMER0_A1_VECTOR
 __interrupt void TIMER0_A1_ISR(void) // Duty Cycle
 {
-    P6OUT |= BIT4;
-    P8OUT &= ~BIT2;
+    P8OUT &= ~(BIT2 & BIT1);
     TA0CCTL1 &= ~CCIFG;
-    P6OUT &= ~BIT4;
 }
 

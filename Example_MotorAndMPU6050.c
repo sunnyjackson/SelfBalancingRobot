@@ -35,17 +35,13 @@ void main(void)
         angle = MPU6050_ReadAngle()/131;
 
         // Set duty cycle based on angle
-        //Motor_SetDutyCycle(abs(angle)*100/90);
-
-        snprintf(msg, MAX_UARTBUFFER_SIZE, "\rangle: %i",angle);
-        UART_print(msg);
-        UART_print("               "); // hacky method for clearing the terminal screen
+        Motor_SetDutyCycle(50);
 
         // Set direction based on angle sign
         if (angle >= 0){
-            Motor_Direction(1);
-        }else{
             Motor_Direction(-1);
+        }else{
+            Motor_Direction(1);
         }
     }
 }
