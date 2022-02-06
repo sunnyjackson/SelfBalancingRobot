@@ -22,6 +22,8 @@ void main(void)
 	UART_Init();                    // Initialize UART port, for reading out telemetry points in a desktop terminal
 	Motor_Init();                   // Initialize GPIO pins for direction control and PWM motor speed control
     MPU6050_Init();                 // Initialize pins for communication with the MPU6050
+    MPU6050_SetCalibration();
+
     //-- main loop
     int16_t angle = 0;
     char msg[MAX_UARTBUFFER_SIZE];
@@ -33,7 +35,11 @@ void main(void)
         angle = MPU6050_ReadAngle()/131;
 
         // Set duty cycle based on angle
-        Motor_SetDutyCycle(abs(angle)*100/90);
+        //Motor_SetDutyCycle(abs(angle)*100/90);
+
+        snprintf(msg, MAX_UARTBUFFER_SIZE, "\rangle: %i",angle);
+        UART_print(msg);
+        UART_print("               "); // hacky method for clearing the terminal screen
 
         // Set direction based on angle sign
         if (angle >= 0){

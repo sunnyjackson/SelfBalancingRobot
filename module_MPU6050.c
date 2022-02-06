@@ -250,7 +250,7 @@ void MPU6050_Calibrate(void)
     // Initialize offsets
     a_offset.z = -a_mean.z/8;
     a_offset.y = -a_mean.y/8;
-    a_offset.x = (16384-a_mean.x)/8; // When connected to my breadboard, gravity points along the +x vector
+    a_offset.x = (-16384-a_mean.x)/8; // Robot mounts the IMU such that gravity points along the -x vector
     g_offset.x = -g_mean.x/4;
     g_offset.y = -g_mean.y/4;
     g_offset.z = -g_mean.z/4;
@@ -270,8 +270,8 @@ void MPU6050_Calibrate(void)
       if (abs(a_mean.y) <= a_tol) ready++;
       else a_offset.y += -a_mean.y/a_tol;
 
-      if (abs(16384-a_mean.x) <= a_tol) ready++;
-      else a_offset.x += (16384-a_mean.x)/a_tol;
+      if (abs(-16384-a_mean.x) <= a_tol) ready++;
+      else a_offset.x += (-16384-a_mean.x)/a_tol;
 
       if (abs(g_mean.x) <= g_tol) ready++;
       else g_offset.x += -g_mean.x/(g_tol+1);
@@ -288,12 +288,12 @@ void MPU6050_Calibrate(void)
 
 void MPU6050_SetCalibration(void)
 {
-    a_offset.x = -580;
-    a_offset.y = 430;
-    a_offset.z = 3800;
+    a_offset.x = -1096;
+    a_offset.y = 359;
+    a_offset.z = 634;
     g_offset.x = 395;
-    g_offset.y = 102;
-    g_offset.z = 177;
+    g_offset.y = 112;
+    g_offset.z = 202;
 }
 
 /*--------------------------------------------------------------------------------
@@ -318,17 +318,17 @@ int16_t MPU6050_ReadAngle(void)
     // There's still quite a bit of integer division in here, since we have a base 1/131 number system. We're already completing this function in under 1 ms, but if we wanted to go faster then we should switch to a binary scaled system
 
     // Propagate angle based on gyro, in base 1/131 fixed-point number system
-    int32_t theta_g = theta - (g.z>>6);
+    int32_t theta_g = theta + (g.y>>6);
 
-    // Estimate angle based on accelerometer, using a fixed-point implementation of theta_a = atan2(y,x), ref: https://dspguru.com/dsp/tricks/fixed-point-atan2-with-self-normalization/
+    // Estimate angle based on accelerometer, using a fixed-point implementation of theta_a = atan2(z,-x), ref: https://dspguru.com/dsp/tricks/fixed-point-atan2-with-self-normalization/
     int32_t theta_a;
-    int32_t abs_y = abs(a.y) + 0b1; // kludge to prevent division-by-0 edge case
-    if (a.x >= 0){
-        theta_a = (int32_t) COEF_1 - ((int32_t) COEF_1*((int32_t) a.x - abs_y)) / ((int32_t) a.x + abs_y);
+    int32_t abs_z = abs(a.z) + 0b1; // kludge to prevent division-by-0 edge case
+    if (-a.x >= 0){
+        theta_a = (int32_t) COEF_1 - ((int32_t) COEF_1*(-(int32_t) a.x - abs_z)) / (-(int32_t) a.x + abs_z);
     }else{
-        theta_a = (int32_t) 3*COEF_1 - ((int32_t) COEF_1*((int32_t) a.x + abs_y)) / (abs_y - (int32_t) a.x);
+        theta_a = (int32_t) 3*COEF_1 - ((int32_t) COEF_1*(-(int32_t) a.x + abs_z)) / (abs_z - (- (int32_t) a.x));
     }
-    if(a.y < 0){
+    if(a.z < 0){
         theta_a = -theta_a;
     }
     theta_a *= RAD2DEG/131; // convert to degrees
@@ -340,5 +340,5 @@ int16_t MPU6050_ReadAngle(void)
     // Complementary Filter: combine angle estimates
     theta = theta_g - ((theta_g)>>5) + ((theta_a_hat)>>5); // roughly equivalent to 0.98*theta_g + 0.02*theta_a_hat
 
-    return (int16_t) theta;
+    return (int16_t) theta_a_hat;
 }
