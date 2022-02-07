@@ -54,7 +54,7 @@ void main(void)
         duty = PID(abs(angle));
 
         // Set duty cycle based on angle
-        Motor_SetDutyCycle(duty+13); // add motor deadzone
+        Motor_SetDutyCycle(duty);
     }
 }
 
@@ -76,7 +76,7 @@ int16_t PID(int16_t e){
     //-- PID control loop parameters
     int16_t K_p = 1;
     int16_t K_i = 0;
-    int16_t K_d = 0;
+    int16_t K_d = 1;
     static int16_t e_i = 0; // error integral
     static int16_t e0 = 0; // previous error (used in calculating derivative)
     int16_t dt = 1; // timestep
@@ -84,7 +84,7 @@ int16_t PID(int16_t e){
     //-- Calculate Derivative & Integral
     e_i += K_i*dt*e;
 
-    int16_t control = (K_p * e*3/7 + e_i + K_d * (e-e0))/131; // divide by 131, scale factor
+    int16_t control = (K_p * e*3/7 + e_i + K_d * (e-e0)/7)/131; // divide by 131, scale factor
     e0 = e;
 
     //-- Control thresholds

@@ -21,22 +21,24 @@ void Motor_Init(void)
     P6OUT |= BIT2;
     P6OUT &= ~BIT1;
 
-    //-- configure P8.2 as PWM output for left-motor
-    P8OUT &= 0x00;
-    P8DIR &= 0x00;
-    P8DIR |= BIT2;
-    //-- configure P8.1 as PWM output for right-motor
-    P8DIR |= BIT1;
+    //-- configure P1.4 & P1.5 as PWM outputs for motor speed control
+    P1DIR |= BIT5;
+    P1SEL |= BIT5;
+    P1DIR |= BIT4;
+    P1SEL |= BIT4;
 
     TA0CCR0 = 2000-1;                          // Set PWM Period (2000 -> 500 Hz)
-    TA0CCR1 = 10;                              // CCR1 PWM duty cycle
-    TA0CCTL1 = OUTMOD_7;                      // CCR1 reset/set
+    TA0CCR3 = 10;                              // CCR3 PWM duty cycle
+    TA0CCR4 = 10;                              // CCR4 PWM duty cycle
+    TA0CCTL3 = OUTMOD_7;                      // CCR3 reset/set
+    TA0CCTL4 = OUTMOD_7;                      // CCR4 reset/set
     TA0CTL |= TACLR; // Clear Timer A counter
     TA0CTL |= MC_1; // Count-up to CCR0
     TA0CTL |= TASSEL_2; // Select SMCLK (~1 MHz)
 
     TA0CCTL0 |= CCIE;    // CCR0 interrupt enable (period)
-    TA0CCTL1 |= CCIE;    // CCR1 interrupt enable (duty cycle)
+    TA0CCTL3 |= CCIE;    // CCR3 interrupt enable (duty cycle, left)
+    TA0CCTL4 |= CCIE;    // CCR4 interrupt enable (duty cycle, right)
     __enable_interrupt();
 }
 
@@ -45,13 +47,12 @@ void Motor_SetDutyCycle(uint8_t duty)
 {
     uint8_t s = 20; // scale factor, to convert 0-100 duty cycle to TA0CCR clock cycles
     if (duty >= 100){ // maximum duty cycle
-        TA0CCR1 = 99*s;
+        TA0CCR3 = 99*s;
+        TA0CCR4 = 99*s;
     }
-    //else if (duty < 25){ // threshold minimum duty cycle (25% threshold is good for a 500 Hz PWM frequency, with my motor)
-    //    TA0CCR1 = 1; // off
-    //}
     else{
-        TA0CCR1 = duty*s;
+        TA0CCR3 = (duty + 13)*s; // + deadzone compensatio
+        TA0CCR4 = (duty + 14)*s; // + deadzone compensatio
     }
 }
 
@@ -87,15 +88,16 @@ void Motor_Direction(int8_t dir)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void TIMER0_A0_ISR(void) // Period
 {
-    P8OUT |= BIT1;
-    P8OUT |= BIT2;
     TA0CCTL0 &= ~CCIFG;
 }
+
 #pragma vector=TIMER0_A1_VECTOR
 __interrupt void TIMER0_A1_ISR(void) // Duty Cycle
 {
-    P8OUT &= ~BIT1;
-    P8OUT &= ~BIT2;
-    TA0CCTL1 &= ~CCIFG;
+    if (TA0CCTL4 & CCIFG == CCIFG){
+        TA0CCTL4 &= ~CCIFG;
+    }
+    else if (TA0CCTL3 & CCIFG == CCIFG){
+            TA0CCTL3 &= ~CCIFG;
+    }
 }
-
