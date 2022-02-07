@@ -47,9 +47,9 @@ void Motor_SetDutyCycle(uint8_t duty)
     if (duty >= 100){ // maximum duty cycle
         TA0CCR1 = 99*s;
     }
-    else if (duty < 25){ // threshold minimum duty cycle (25% threshold is good for a 500 Hz PWM frequency, with my motor)
-        TA0CCR1 = 1; // off
-    }
+    //else if (duty < 25){ // threshold minimum duty cycle (25% threshold is good for a 500 Hz PWM frequency, with my motor)
+    //    TA0CCR1 = 1; // off
+    //}
     else{
         TA0CCR1 = duty*s;
     }
@@ -87,13 +87,15 @@ void Motor_Direction(int8_t dir)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void TIMER0_A0_ISR(void) // Period
 {
-    P8OUT |= (BIT2 & BIT1);
+    P8OUT |= BIT1;
+    P8OUT |= BIT2;
     TA0CCTL0 &= ~CCIFG;
 }
 #pragma vector=TIMER0_A1_VECTOR
 __interrupt void TIMER0_A1_ISR(void) // Duty Cycle
 {
-    P8OUT &= ~(BIT2 & BIT1);
+    P8OUT &= ~BIT1;
+    P8OUT &= ~BIT2;
     TA0CCTL1 &= ~CCIFG;
 }
 

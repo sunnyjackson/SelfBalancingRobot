@@ -318,7 +318,7 @@ int16_t MPU6050_ReadAngle(void)
     // There's still quite a bit of integer division in here, since we have a base 1/131 number system. We're already completing this function in under 1 ms, but if we wanted to go faster then we should switch to a binary scaled system
 
     // Propagate angle based on gyro, in base 1/131 fixed-point number system
-    int32_t theta_g = theta + (g.y>>6);
+    int32_t theta_g = theta - (g.y>>8); // this loop runs at around 3.3 ms, which is close to 1/2^8 = 0.0039
 
     // Estimate angle based on accelerometer, using a fixed-point implementation of theta_a = atan2(z,-x), ref: https://dspguru.com/dsp/tricks/fixed-point-atan2-with-self-normalization/
     int32_t theta_a;
@@ -340,5 +340,5 @@ int16_t MPU6050_ReadAngle(void)
     // Complementary Filter: combine angle estimates
     theta = theta_g - ((theta_g)>>5) + ((theta_a_hat)>>5); // roughly equivalent to 0.98*theta_g + 0.02*theta_a_hat
 
-    return (int16_t) theta_a_hat;
+    return (int16_t) theta;
 }
